@@ -1,0 +1,87 @@
+// firestore.rules
+// Copia estas reglas en Firebase Console → Firestore → Rules
+// O usa Firebase CLI: firebase deploy --only firestore:rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+    function isAdmin() {
+      // 👑 Reemplaza este UID por tu UID real de Administrador de Firebase Auth
+      return request.auth.uid == "ppm17HE6yUVoESHVf7YNpIVMh9t2";
+    }
+
+    // ── Users ─────────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read:  if isAuth();
+      allow create: if isOwner(uid);
+      // Los usuarios modifican sus propios campos seguros (como monedas o perfil)
+      allow update: if isOwner(uid)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['uid', 'email', 'createdAt']);
+    }
+
+    // ── Matches ───────────────────────────────────────────────────────────────
+    match /matches/{matchId} {
+      allow read: if isAuth();
+      // 🔒 Blindado: Solo tú puedes crear, editar o finalizar partidos
+      allow write: if isAuth() && isAdmin();
+    }
+
+    // ── Predictions ───────────────────────────────────────────────────────────
+    match /predictions/{predId} {
+      allow read: if isAuth();
+      allow create, update: if isAuth()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.homeScore is int
+        && request.resource.data.awayScore is int
+        && request.resource.data.homeScore >= 0
+        && request.resource.data.awayScore >= 0;
+    }
+
+    // ── Groups ────────────────────────────────────────────────────────────────
+    match /groups/{groupId} {
+      allow read:   if isAuth() && request.auth.uid in resource.data.members;
+      allow create: if isAuth()
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.createdBy == request.auth.uid;
+      // Permite unirse (update) si estás en la lista de miembros nueva
+      allow update: if isAuth() && (
+        request.auth.uid in resource.data.members || 
+        request.auth.uid in request.resource.data.members
+      );
+    }
+
+    // ── Group Messages ────────────────────────────────────────────────────────
+    match /groupMessages/{groupId}/messages/{msgId} {
+      allow read:   if isAuth()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+      allow create: if isAuth()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members
+        && request.auth.uid == request.resource.data.userId;
+      allow update: if isAuth()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+    }
+
+    // ── Notifications (COLECCIÓN RAÍZ GLOBAL REPARADA) ────────────────────────
+    match /notifications/{notifId} {
+      // Cualquiera autenticado puede gatillar una alerta (ej: al mandar chat o unirse a grupo)
+      allow create: if isAuth();
+      // 🔔 Solo el dueño de la notificación puede verla o marcarla como leída
+      allow read, update: if isAuth() && request.auth.uid == resource.data.userId;
+    }
+
+    // ── Coin History ──────────────────────────────────────────────────────────
+    match /coinHistory/{docId} {
+      allow read:   if isAuth() && request.auth.uid == resource.data.userId;
+      allow create: if isAuth() && request.auth.uid == request.resource.data.userId;
+    }
+  }
+}

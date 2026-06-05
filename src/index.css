@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #0a0e1a;
+    color: #f9fafb;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100dvh;
+  }
+
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #0a0e1a; }
+  ::-webkit-scrollbar-thumb { background: #1e2d3d; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #00ff7f55; }
+
+  /* selection */
+  ::selection { background: #00ff7f33; color: #fff; }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#111827] border border-[#1e2d3d] rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-[#00ff7f] text-[#0a0e1a] font-bold py-3 px-6 rounded-xl
+           hover:bg-[#00e56f] active:scale-95
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-[#1e2d3d] text-white font-semibold py-3 px-6 rounded-xl
+           border border-[#2d3f52] hover:bg-[#263547] active:scale-95
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply text-gray-400 hover:text-white font-medium py-2 px-4 rounded-xl
+           hover:bg-[#1e2d3d] transition-all duration-200;
+  }
+
+  .input-field {
+    @apply w-full bg-[#0d1b2a] border border-[#1e2d3d] rounded-xl px-4 py-3
+           text-white placeholder-gray-500 text-sm
+           focus:outline-none focus:border-[#00ff7f] focus:ring-1 focus:ring-[#00ff7f33]
+           transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .badge-live {
+    @apply badge bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+
+  .badge-upcoming {
+    @apply badge bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+
+  .badge-finished {
+    @apply badge bg-gray-500/20 text-gray-400 border border-gray-500/30;
+  }
+
+  .neon-text {
+    @apply text-[#00ff7f];
+    text-shadow: 0 0 10px #00ff7f66;
+  }
+
+  .gold-text {
+    @apply text-[#fbbf24];
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, #00ff7f33, #3b82f633);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .text-shadow-neon {
+    text-shadow: 0 0 10px currentColor;
+  }
+}
+
+/* ── COMPLEMENTOS INTEGRADOS PARA EL CHAT Y NOTIFICACIONES ───────────────── */
+
+/* Margen dinámico para el input de chat en iOS */
+.pb-safe {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* Animación de entrada para pantallas y modales */
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
