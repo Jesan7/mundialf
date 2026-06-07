@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import toast from 'react-hot-toast'
 import { Eye, EyeOff, Trophy, User } from 'lucide-react'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '@/services/firebase'
 
 export default function Register() {
   const { register } = useAuth()
@@ -25,11 +27,28 @@ export default function Register() {
 
     setLoading(true)
     try {
-      // Se registra de forma plana; por defecto el perfil del usuario no tendrá groupId (será undefined)
-      await register({ email: form.email, password: form.password, displayName: form.displayName.trim() })
+      // 1. Crear el usuario en Firebase Authentication
+      const userCredential = await register(form.email.trim(), form.password, form.displayName.trim())
+      const newUser = userCredential.user
+
+      // 2. Inicializar el documento del usuario en la colección 'users' de Firestore
+      // Recuperamos la inyección de monedas de bienvenida (500) y estadísticas base
+      await setDoc(doc(db, 'users', newUser.uid), {
+        uid: newUser.uid,
+        displayName: form.displayName.trim(),
+        email: form.email.trim().toLowerCase(),
+        coins: 500,               // Monedas de bienvenida
+        totalPoints: 0,
+        jornadaPoints: 0,
+        streak: 0,
+        groupId: "",              // Nace con string vacío para activar el aislamiento de ligas privadas
+        createdAt: new Date().toISOString()
+      })
+
       toast.success('¡Cuenta creada! Bienvenido a MundialF 🎉')
       navigate('/home', { replace: true })
     } catch (err) {
+      console.error(err)
       toast.error(firebaseError(err.code))
     } finally {
       setLoading(false)

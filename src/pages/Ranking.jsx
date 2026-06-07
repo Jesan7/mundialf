@@ -8,7 +8,7 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { Crown, Users, ShieldPlus, DoorOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 
 const JORNADAS = Array.from({ length: 34 }, (_, i) => ({
@@ -26,18 +26,47 @@ export default function Ranking() {
   const [inputGroupId, setInputGroupId] = useState('')
   const [joining, setJoining]           = useState(false)
 
-  // Función para guardar el código de grupo directamente en el perfil del usuario logueado
-  async function handleAssignGroup(e, selectedCode) {
+  // Función inteligente para validar y guardar el código de grupo directo en el usuario
+  async function handleAssignGroup(e) {
     e.preventDefault()
-    const code = (selectedCode || inputGroupId).trim().toUpperCase()
-    if (!code) { toast.error('Ingresa un nombre o código válido'); return }
+    const textInput = inputGroupId.trim().toUpperCase()
+    if (!textInput) { toast.error('Ingresa un nombre o código válido'); return }
 
     setJoining(true)
     try {
+      let finalGroupId = textInput
+
+      // 1. Buscamos en la colección 'groups' si el texto ingresado corresponde al nombre o al ID de un grupo existente
+      const groupsRef = collection(db, 'groups')
+      const qByName = query(groupsRef, where('name', '==', textInput.toLowerCase()))
+      const qById   = query(groupsRef, where('code', '==', textInput)) // Por si ingresan el alfanumérico directo
+
+      const [snapName, snapId] = await Promise.all([
+        getDocs(qByName),
+        getDocs(qById)
+      ])
+
+      if (!snapName.empty) {
+        // Si lo encontró por nombre (ej: "FUT"), extraemos su código real de enlace (ej: "PJFUUL")
+        const groupData = snapName.docs[0].data()
+        finalGroupId = groupData.code || snapName.docs[0].id
+      } else if (!snapId.empty) {
+        // Si ingresó directamente el código alfanumérico
+        const groupData = snapId.docs[0].data()
+        finalGroupId = groupData.code || snapId.docs[0].id
+      } else {
+        // Si no se encuentra coincidencia, alertamos al usuario para evitar aislamientos fantasmas
+        toast.error('El grupo especificado no existe. Verifica el nombre o código.')
+        setJoining(false)
+        return
+      }
+
+      // 2. Guardamos la llave real y única de la comunidad en el perfil del usuario
       const userRef = doc(db, 'users', user.uid)
-      await updateDoc(userRef, { groupId: code })
-      toast.success(`¡Te has unido al grupo ${code}! 🎉`)
-      // Nota: La app se refrescará sola porque AuthContext detectará el cambio en el documento del usuario
+      await updateDoc(userRef, { groupId: finalGroupId.toUpperCase() })
+      
+      toast.success(`¡Te has unido a la comunidad privada! 🎉`)
+      setInputGroupId('')
     } catch (err) {
       console.error(err)
       toast.error('No se pudo guardar el grupo. Inténtalo de nuevo.')
@@ -47,7 +76,6 @@ export default function Ranking() {
   }
 
   // 🌟 ESCENARIO B: Si el usuario NO pertenece a ningún grupo privado, le mostramos la pantalla de bienvenida a grupos
-  // Modificación: Validamos de forma estricta si no existe el atributo o si viene vacío
   if (!loading && (!user?.groupId || user?.groupId.trim() === '')) {
     return (
       <MainLayout>
@@ -68,12 +96,12 @@ export default function Ranking() {
               <DoorOpen className="w-4 h-4 text-[#00ff7f]" />
               <h3 className="text-sm font-bold text-white">Unirse a un grupo existente</h3>
             </div>
-            <form onSubmit={(e) => handleAssignGroup(e)} className="flex gap-2">
+            <form onSubmit={handleAssignGroup} className="flex gap-2">
               <input
                 type="text"
                 value={inputGroupId}
                 onChange={(e) => setInputGroupId(e.target.value)}
-                placeholder="Ej: INEC2026, TRABAJO"
+                placeholder="Ej: FUT, INEC2026, PJFUUL"
                 className="input-field uppercase flex-1 text-sm h-10"
                 disabled={joining}
                 required
@@ -95,7 +123,7 @@ export default function Ranking() {
               <h3 className="text-sm font-bold text-white">¿Eres el administrador de tus amigos?</h3>
             </div>
             <p className="text-[11px] text-gray-400">
-              Inventa un código único (ej: tu apellido o el nombre de tu empresa) diles que se registren usando esa misma palabra.
+              Inventa un grupo en la sección de Grupos, copia el código asignado o diles que busquen exactamente por el nombre que le diste.
             </p>
           </div>
         </div>
@@ -114,10 +142,10 @@ export default function Ranking() {
         <div className="flex items-center justify-between gap-4 bg-[#111827] border border-[#1e2d3d] rounded-2xl px-4 py-3">
           <div>
             <h1 className="text-xl font-black text-white">Ranking por Jornada</h1>
-            <p className="text-gray-400 text-[10px] mt-0.5">Top posiciones de la fecha activa</p>
+            <p className="text-gray-400 text-[10px] mt-0.5">Top posiciones de tu comunidad privada</p>
           </div>
           <div className="bg-[#00ff7f11] border border-[#00ff7f33] px-3 py-1 rounded-xl flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-xs font-black text-[#00ff7f] tracking-wider">🛡️ {user?.groupId}</span>
+            <span className="text-xs font-black text-[#00ff7f] tracking-wider">🛡️ GRUPO: {user?.groupId}</span>
           </div>
         </div>
 
@@ -158,7 +186,7 @@ export default function Ranking() {
             <EmptyState
               icon="🏅"
               title="Sin actividad"
-              body="No hay puntos procesados para esta jornada todavía."
+              body="No hay miembros o puntos calculados en esta jornada para tu grupo."
             />
           ) : (
             ranking.map((player) => (
