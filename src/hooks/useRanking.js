@@ -10,23 +10,39 @@ import {
 import { db } from '@/services/firebase'
 
 /**
- * Ranking por Jornada — Trae los usuarios y calcula la sumatoria de puntos 
+ * Ranking por Jornada — Trae los usuarios de un mismo grupo y calcula la sumatoria de puntos 
  * obtenidos únicamente en la jornada seleccionada de forma eficiente y plana.
  */
-export function useRanking(topN = 50, selectedJornada = 1) {
+// 🌟 CAMBIO CLAVE: Agregamos groupId como tercer parámetro (por defecto es null)
+export function useRanking(topN = 50, selectedJornada = 1, groupId = null) {
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
+    // 🛡️ CONTROL DE SEGURIDAD ROBUSTO:
+    // Si la sesión aún no carga, o el groupId es undefined, null, o un texto vacío "",
+    // frenamos el hook inmediatamente para que NO consulte a toda la base de datos por error.
+    if (!groupId || typeof groupId !== 'string' || groupId.trim() === '') {
+      setRanking([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     let unsubscribePreds = () => {}
 
-    // 1. Traemos la lista de usuarios. Usamos getDocs (una sola lectura) en lugar de un 
-    // listener activo onSnapshot para evitar sobrecostos y bucles de renderizado.
+    // 1. Traemos la lista de usuarios FILTRADA por grupo. Usamos getDocs (una sola lectura)
+    // para evitar sobrecostos y bucles de renderizado accidentales.
     const fetchUsersAndCalculate = async () => {
       try {
-        const usersSnap = await getDocs(query(collection(db, 'users')))
+        // 🌟 CAMBIO CLAVE: Aplicamos el filtro estricto por groupId en la colección de usuarios
+        // Nos aseguramos de limpiar espacios con .trim() y forzar mayúsculas para evitar fallas manuales
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('groupId', '==', groupId.trim().toUpperCase())
+        )
+        const usersSnap = await getDocs(usersQuery)
         const usersMap = {}
 
         usersSnap.docs.forEach((doc) => {
@@ -37,8 +53,14 @@ export function useRanking(topN = 50, selectedJornada = 1) {
           }
         })
 
+        // Si por alguna razón extraña no hay usuarios en este grupo, cortamos de forma segura
+        if (Object.keys(usersMap).length === 0) {
+          setRanking([])
+          setLoading(false)
+          return
+        }
+
         // 2. Montamos la consulta de predicciones filtrada estrictamente por la jornada activa.
-        // Removimos el '!= null' temporalmente para evitar la obligación de crear índices complejos en Firebase.
         const predsQuery = query(
           collection(db, 'predictions'),
           where('jornada', '==', Number(selectedJornada))
@@ -55,7 +77,8 @@ export function useRanking(topN = 50, selectedJornada = 1) {
           // Recorrer los pronósticos y mapear los puntos si el partido ya fue procesado por el admin
           predsSnap.docs.forEach((d) => {
             const predData = d.data()
-            // Filtro seguro en caliente: Solo sumamos si el administrador ya inyectó puntos numéricos
+            // Filtro seguro en caliente: Solo sumamos si el usuario pertenece al grupo cargado en memoria 
+            // y si el administrador ya inyectó puntos numéricos válidos.
             if (usersMap[predData.userId] && predData.points !== null && predData.points !== undefined) {
               usersMap[predData.userId].jornadaPoints += Number(predData.points)
             }
@@ -91,7 +114,8 @@ export function useRanking(topN = 50, selectedJornada = 1) {
     return () => {
       unsubscribePreds()
     }
-  }, [topN, selectedJornada])
+  // 🌟 CAMBIO CLAVE: Agregamos groupId al arreglo de dependencias para que el hook se refresque si cambia el grupo
+  }, [topN, selectedJornada, groupId])
 
   return { ranking, loading, error }
 }
