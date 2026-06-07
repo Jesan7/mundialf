@@ -25,6 +25,7 @@ export default function Register() {
 
     setLoading(true)
     try {
+      // Se registra de forma plana; por defecto el perfil del usuario no tendrá groupId (será undefined)
       await register({ email: form.email, password: form.password, displayName: form.displayName.trim() })
       toast.success('¡Cuenta creada! Bienvenido a MundialF 🎉')
       navigate('/home', { replace: true })
