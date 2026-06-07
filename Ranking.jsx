@@ -47,7 +47,8 @@ export default function Ranking() {
   }
 
   // 🌟 ESCENARIO B: Si el usuario NO pertenece a ningún grupo privado, le mostramos la pantalla de bienvenida a grupos
-  if (!loading && !user?.groupId) {
+  // Modificación: Validamos de forma estricta si no existe el atributo o si viene vacío
+  if (!loading && (!user?.groupId || user?.groupId.trim() === '')) {
     return (
       <MainLayout>
         <div className="max-w-md mx-auto mt-8 animate-fade-in space-y-6 px-2">
@@ -94,7 +95,7 @@ export default function Ranking() {
               <h3 className="text-sm font-bold text-white">¿Eres el administrador de tus amigos?</h3>
             </div>
             <p className="text-[11px] text-gray-400">
-              Inventa un código único (ej: tu apellido o el nombre de tu empresa) y diles que se registren usando esa misma palabra.
+              Inventa un código único (ej: tu apellido o el nombre de tu empresa) diles que se registren usando esa misma palabra.
             </p>
           </div>
         </div>
