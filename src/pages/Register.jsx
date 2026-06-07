@@ -3,15 +3,15 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import toast from 'react-hot-toast'
-import { Eye, EyeOff, Trophy, User } from 'lucide-react'
-import { doc, setDoc } from 'firebase/firestore'
+import { Eye, EyeOff, Trophy, User, Shield } from 'lucide-react'
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 
 export default function Register() {
   const { register } = useAuth()
   const navigate      = useNavigate()
 
-  const [form, setForm]       = useState({ displayName: '', email: '', password: '', confirm: '' })
+  const [form, setForm]       = useState({ displayName: '', email: '', password: '', confirm: '', groupInput: '' })
   const [showPwd, setShowPwd] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -22,26 +22,61 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.displayName.trim()) { toast.error('Ingresa tu nombre'); return }
+    if (!form.groupInput.trim()) { toast.error('Ingresa el código o nombre de tu grupo'); return }
     if (form.password.length < 6) { toast.error('Contraseña mínimo 6 caracteres'); return }
     if (form.password !== form.confirm) { toast.error('Las contraseñas no coinciden'); return }
 
     setLoading(true)
     try {
-      // 1. Crear el usuario en Firebase Authentication
-      const userCredential = await register(form.email.trim(), form.password, form.displayName.trim())
-      const newUser = userCredential.user
+      const targetGroup = form.groupInput.trim().toUpperCase()
+      let finalGroupId = targetGroup
 
-      // 2. Inicializar el documento del usuario en la colección 'users' de Firestore
-      // Recuperamos la inyección de monedas de bienvenida (500) y estadísticas base
+      // 1. Validar si el grupo ingresado existe en la base de datos
+      const groupsRef = collection(db, 'groups')
+      const qByName = query(groupsRef, where('name', '==', targetGroup.toLowerCase()))
+      const qById   = query(groupsRef, where('code', '==', targetGroup))
+
+      const [snapName, snapId] = await Promise.all([
+        getDocs(qByName),
+        getDocs(qById)
+      ])
+
+      if (!snapName.empty) {
+        const groupData = snapName.docs[0].data()
+        finalGroupId = groupData.code || snapName.docs[0].id
+      } else if (!snapId.empty) {
+        const groupData = snapId.docs[0].data()
+        finalGroupId = groupData.code || snapId.docs[0].id
+      } else {
+        toast.error('El grupo especificado no existe. Verifica el nombre o código con tu administrador.')
+        setLoading(false)
+        return
+      }
+
+      // 2. Crear el usuario en Firebase Authentication usando tu función nativa
+      const userCredential = await register({ 
+        email: form.email, 
+        password: form.password, 
+        displayName: form.displayName.trim() 
+      })
+      
+      // Si register retorna la credencial directamente, extraemos el usuario
+      const newUser = userCredential?.user || userCredential
+
+      if (!newUser || !newUser.uid) {
+        throw new Error('No se pudo obtener el UID del usuario registrado.')
+      }
+
+      // 3. Inicializar el documento completo en la colección 'users' de Firestore sin omitir nada
       await setDoc(doc(db, 'users', newUser.uid), {
         uid: newUser.uid,
         displayName: form.displayName.trim(),
         email: form.email.trim().toLowerCase(),
-        coins: 500,               // Monedas de bienvenida
-        totalPoints: 0,
-        jornadaPoints: 0,
-        streak: 0,
-        groupId: "",              // Nace con string vacío para activar el aislamiento de ligas privadas
+        coins: 500,               // Tus 500 monedas de bienvenida
+        totalPoints: 0,           // Puntos totales iniciales
+        jornadaPoints: 0,         // Puntos por jornada iniciales
+        streak: 0,                // Racha inicial
+        groupId: finalGroupId.toUpperCase(), // Sincronizado a la comunidad privada
         createdAt: new Date().toISOString()
       })
 
@@ -100,6 +135,25 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="Tu nombre"
                   className="input-field pl-9"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Código o Nombre del Grupo */}
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                Código o Nombre del Grupo Privado
+              </label>
+              <div className="relative">
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  name="groupInput"
+                  value={form.groupInput}
+                  onChange={handleChange}
+                  placeholder="Ej: FUT o PJFUUL"
+                  className="input-field pl-9 uppercase"
                   required
                 />
               </div>
