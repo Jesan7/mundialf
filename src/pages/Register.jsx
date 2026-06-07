@@ -2,16 +2,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { collection, query, where, getDocs } from 'firebase/firestore'
-import { db } from '@/services/firebase'
 import toast from 'react-hot-toast'
-import { Eye, EyeOff, Trophy, User, Shield } from 'lucide-react'
+import { Eye, EyeOff, Trophy, User } from 'lucide-react'
 
 export default function Register() {
   const { register } = useAuth()
-  const navigate = useNavigate()
+  const navigate      = useNavigate()
 
-  const [form, setForm] = useState({ displayName: '', email: '', password: '', confirm: '', groupCode: '' })
+  const [form, setForm]       = useState({ displayName: '', email: '', password: '', confirm: '' })
   const [showPwd, setShowPwd] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -22,33 +20,13 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.displayName.trim()) { toast.error('Ingresa tu nombre'); return }
-    if (!form.groupCode.trim()) { toast.error('Ingresa el código de tu grupo'); return }
     if (form.password.length < 6) { toast.error('Contraseña mínimo 6 caracteres'); return }
     if (form.password !== form.confirm) { toast.error('Las contraseñas no coinciden'); return }
 
     setLoading(true)
     try {
-      const targetCode = form.groupCode.trim().toUpperCase()
-      
-      // Validar si el grupo existe en Firestore
-      const q = query(collection(db, 'groups'), where('code', '==', targetCode))
-      const snap = await getDocs(q)
-      
-      if (snap.empty) {
-        toast.error(`El grupo "${targetCode}" no existe. Verifica el código.`);
-        setLoading(false)
-        return
-      }
-
-      // Proceder con el registro enviando el groupId mapeado
-      await register({ 
-        email: form.email, 
-        password: form.password, 
-        displayName: form.displayName.trim(),
-        groupId: targetCode
-      })
-
-      toast.success('¡Cuenta creada con éxito! 🎉')
+      await register({ email: form.email, password: form.password, displayName: form.displayName.trim() })
+      toast.success('¡Cuenta creada! Bienvenido a MundialF 🎉')
       navigate('/home', { replace: true })
     } catch (err) {
       toast.error(firebaseError(err.code))
@@ -66,7 +44,7 @@ export default function Register() {
 
       <div className="w-full max-w-sm animate-slide-up">
         {/* Logo */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#111827] border border-[#1e2d3d] mb-4">
             <Trophy className="w-8 h-8 text-[#00ff7f]" />
           </div>
@@ -102,25 +80,6 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="Tu nombre"
                   className="input-field pl-9"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Código del Grupo */}
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                Código o Nombre del Grupo Privado
-              </label>
-              <div className="relative">
-                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  name="groupCode"
-                  value={form.groupCode}
-                  onChange={handleChange}
-                  placeholder="Ej: GLOBAL o tu liga privada"
-                  className="input-field pl-9 font-bold uppercase tracking-wider placeholder:normal-case placeholder:font-normal"
                   required
                 />
               </div>
@@ -213,8 +172,8 @@ export default function Register() {
 function firebaseError(code) {
   const map = {
     'auth/email-already-in-use': 'Este email ya está registrado',
-    'auth/invalid-email':       'Email inválido',
-    'auth/weak-password':       'Contraseña muy débil',
+    'auth/invalid-email':        'Email inválido',
+    'auth/weak-password':        'Contraseña muy débil',
   }
   return map[code] || 'Error al crear cuenta'
 }
