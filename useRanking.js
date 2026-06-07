@@ -20,9 +20,10 @@ export function useRanking(topN = 50, selectedJornada = 1, groupId = null) {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    // 🛡️ Seguridad: Si la sesión del usuario aún está cargando y no tenemos el groupId,
-    // detenemos la ejecución para evitar consultas inválidas o vacías.
-    if (!groupId) {
+    // 🛡️ CONTROL DE SEGURIDAD ROBUSTO:
+    // Si la sesión aún no carga, o el groupId es undefined, null, o un texto vacío "",
+    // frenamos el hook inmediatamente para que NO consulte a toda la base de datos por error.
+    if (!groupId || typeof groupId !== 'string' || groupId.trim() === '') {
       setRanking([])
       setLoading(false)
       return
@@ -36,9 +37,10 @@ export function useRanking(topN = 50, selectedJornada = 1, groupId = null) {
     const fetchUsersAndCalculate = async () => {
       try {
         // 🌟 CAMBIO CLAVE: Aplicamos el filtro estricto por groupId en la colección de usuarios
+        // Nos aseguramos de limpiar espacios con .trim() y forzar mayúsculas para evitar fallas manuales
         const usersQuery = query(
           collection(db, 'users'),
-          where('groupId', '==', groupId)
+          where('groupId', '==', groupId.trim().toUpperCase())
         )
         const usersSnap = await getDocs(usersQuery)
         const usersMap = {}
