@@ -7,32 +7,30 @@ import EmptyState from '@/components/ui/EmptyState'
 import { useState } from 'react'
 import clsx from 'clsx'
 import { Crown } from 'lucide-react'
- 
-// 🌟 GENERACIÓN AUTOMÁTICA DE LAS 34 JORNADAS DEL TORNEO
+
+// 🌟 CAMBIO ESTRATÉGICO: Generación automática de las 34 jornadas del torneo
 const JORNADAS = Array.from({ length: 34 }, (_, i) => ({
   id: i + 1,
   label: `Jornada ${i + 1}`
 }))
- 
+
 export default function Ranking() {
   const [jornada, setJornada] = useState(1) // Controla qué pestaña está activa
-  const { user } = useAuth() // 👈 Traemos el usuario logueado antes de llamar al hook
-  
-  // 🌟 CAMBIO CLAVE: Le pasamos el groupId del usuario actual de forma dinámica al hook useRanking
-  const { ranking, loading } = useRanking(50, jornada, user?.groupId)
- 
+  const { ranking, loading } = useRanking(50, jornada)
+  const { user }             = useAuth()
+
   const top3 = ranking.slice(0, 3)
- 
+
   return (
     <MainLayout>
       <div className="animate-fade-in space-y-6">
- 
+
         {/* Header */}
         <div>
           <h1 className="text-2xl font-black text-white">Ranking por Jornada</h1>
           <p className="text-gray-400 text-xs mt-1">Top jugadores del Mundial 2026 de la fecha activa</p>
         </div>
- 
+
         {/* Selector de Jornadas Horizontal */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none snap-x">
           {JORNADAS.map((j) => (
@@ -50,7 +48,7 @@ export default function Ranking() {
             </button>
           ))}
         </div>
- 
+
         {/* Podio Dinámico */}
         {!loading && ranking.length >= 3 && (
           <div className="flex items-end justify-center gap-3 mb-4 px-2 pt-2">
@@ -62,10 +60,10 @@ export default function Ranking() {
             <PodiumCard user={top3[2]} rank={3} height="h-20" />
           </div>
         )}
- 
+
         {/* Tabla de Posiciones Completa */}
         <div className="card divide-y divide-[#1e2d3d]">
-          {loading || !user?.groupId ? (
+          {loading ? (
             <div className="px-4 divide-y divide-[#1e2d3d]">
               {Array(8).fill(0).map((_, i) => <SkeletonRankRow key={i} />)}
             </div>
@@ -85,12 +83,12 @@ export default function Ranking() {
             ))
           )}
         </div>
- 
+
       </div>
     </MainLayout>
   )
 }
- 
+
 function PodiumCard({ user: player, rank, height, crown }) {
   if (!player) return null
   const initials = (player.displayName ?? 'U')[0].toUpperCase()
@@ -114,7 +112,7 @@ function PodiumCard({ user: player, rank, height, crown }) {
         height,
         rank === 1 ? 'bg-[#fbbf2420] border border-[#fbbf2440]' :
         rank === 2 ? 'bg-[#6b728020] border border-[#6b728040]' :
-                   'bg-[#ea580c20] border border-[#ea580c40]'
+                     'bg-[#ea580c20] border border-[#ea580c40]'
       )}>
         <span className="text-lg font-black text-white">#{rank}</span>
         <span className="text-[10px] text-gray-400 text-center px-1 leading-tight truncate w-full">
@@ -125,11 +123,11 @@ function PodiumCard({ user: player, rank, height, crown }) {
     </div>
   )
 }
- 
+
 function RankRow({ player, isMe }) {
   const initials = (player.displayName ?? 'U')[0].toUpperCase()
   const rankColor = player.rank === 1 ? 'text-[#fbbf24]' : player.rank <= 3 ? 'text-gray-300' : 'text-gray-500'
- 
+
   return (
     <div className={clsx(
       'flex items-center gap-3 px-4 py-3 transition-colors',
@@ -139,7 +137,7 @@ function RankRow({ player, isMe }) {
       <span className={clsx('text-sm font-bold w-7 text-center tabular-nums', rankColor)}>
         {player.rank <= 3 ? ['🥇','🥈','🥉'][player.rank - 1] : `#${player.rank}`}
       </span>
- 
+
       {/* Avatar */}
       <div className={clsx(
         'w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white flex-shrink-0',
@@ -149,7 +147,7 @@ function RankRow({ player, isMe }) {
       )}>
         {initials}
       </div>
- 
+
       {/* Detalles del Usuario */}
       <div className="flex-1 min-w-0">
         <p className={clsx('text-sm font-semibold truncate', isMe ? 'text-[#00ff7f]' : 'text-white')}>
@@ -160,7 +158,7 @@ function RankRow({ player, isMe }) {
           🪙 {player.coins ?? 0}
         </p>
       </div>
- 
+
       {/* Puntos de esta Jornada */}
       <div className="text-right">
         <p className="text-sm font-black text-[#fbbf24]">{player.jornadaPoints ?? 0}</p>
