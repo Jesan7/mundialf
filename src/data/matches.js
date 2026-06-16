@@ -332,7 +332,7 @@ export const MATCHES_DATA = [
     id: 'match_2026_22',
     jornada: 7,
     homeTeam: 'Inglaterra',
-    homeFlag: 'en',
+    homeFlag: 'gb-eng',
     awayTeam: 'Croacia',
     awayFlag: 'hr',
     homeScore: null,
@@ -704,7 +704,7 @@ export const MATCHES_DATA = [
     id: 'match_2026_46',
     jornada: 13,
     homeTeam: 'Inglaterra',
-    homeFlag: 'en',
+    homeFlag: 'gb-eng',
     awayTeam: 'Ghana',
     awayFlag: 'gh',
     homeScore: null,
@@ -1026,6 +1026,36 @@ export const MATCHES_DATA = [
   {
     id: 'match_2026_67',
     jornada: 17,
+    homeTeam: 'Panamá',
+    homeFlag: 'pa',
+    awayTeam: 'Inglaterra',
+    awayFlag: 'gb-eng',
+    homeScore: null,
+    awayScore: null,
+    date: '2026-06-27T16:00:00',
+    status: 'upcoming',
+    group: 'Grupo L',
+    stage: 'Fase de Grupos',
+    venue: 'Estadio Nueva York Nueva Jersey'
+  },
+  {
+    id: 'match_2026_68',
+    jornada: 17,
+    homeTeam: 'Croacia',
+    homeFlag: 'hr',
+    awayTeam: 'Ghana',
+    awayFlag: 'gh',
+    homeScore: null,
+    awayScore: null,
+    date: '2026-06-27T16:00:00',
+    status: 'upcoming',
+    group: 'Grupo L',
+    stage: 'Fase de Grupos',
+    venue: 'Estadio Filadelfia'
+  },
+  {
+    id: 'match_2026_69',
+    jornada: 17,
     homeTeam: 'RD Congo',
     homeFlag: 'cd',
     awayTeam: 'Uzbekistán',
@@ -1039,7 +1069,7 @@ export const MATCHES_DATA = [
     venue: 'Mercedes-Benz Stadium, Atlanta'
   },
   {
-    id: 'match_2026_68',
+    id: 'match_2026_70',
     jornada: 17,
     homeTeam: 'Colombia',
     homeFlag: 'co',
@@ -1054,7 +1084,7 @@ export const MATCHES_DATA = [
     venue: 'Hard Rock Stadium, Miami'
   },
   {
-    id: 'match_2026_69',
+    id: 'match_2026_71',
     jornada: 17,
     homeTeam: 'Argelia',
     homeFlag: 'dz',
@@ -1069,7 +1099,7 @@ export const MATCHES_DATA = [
     venue: 'AT&T Stadium, Dallas'
   },
   {
-    id: 'match_2026_70',
+    id: 'match_2026_72',
     jornada: 17,
     homeTeam: 'Jordania',
     homeFlag: 'jo',
