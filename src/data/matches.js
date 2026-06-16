@@ -1024,7 +1024,7 @@ export const MATCHES_DATA = [
 
   // JORNADA 17
   {
-    id: 'match_2026_67',
+    id: 'match_2026_71',
     jornada: 17,
     homeTeam: 'Panamá',
     homeFlag: 'pa',
@@ -1039,7 +1039,7 @@ export const MATCHES_DATA = [
     venue: 'Estadio Nueva York Nueva Jersey'
   },
   {
-    id: 'match_2026_68',
+    id: 'match_2026_72',
     jornada: 17,
     homeTeam: 'Croacia',
     homeFlag: 'hr',
@@ -1054,7 +1054,7 @@ export const MATCHES_DATA = [
     venue: 'Estadio Filadelfia'
   },
   {
-    id: 'match_2026_69',
+    id: 'match_2026_67',
     jornada: 17,
     homeTeam: 'RD Congo',
     homeFlag: 'cd',
@@ -1069,7 +1069,7 @@ export const MATCHES_DATA = [
     venue: 'Mercedes-Benz Stadium, Atlanta'
   },
   {
-    id: 'match_2026_70',
+    id: 'match_2026_68',
     jornada: 17,
     homeTeam: 'Colombia',
     homeFlag: 'co',
@@ -1084,7 +1084,7 @@ export const MATCHES_DATA = [
     venue: 'Hard Rock Stadium, Miami'
   },
   {
-    id: 'match_2026_71',
+    id: 'match_2026_69',
     jornada: 17,
     homeTeam: 'Argelia',
     homeFlag: 'dz',
@@ -1099,7 +1099,7 @@ export const MATCHES_DATA = [
     venue: 'AT&T Stadium, Dallas'
   },
   {
-    id: 'match_2026_72',
+    id: 'match_2026_70',
     jornada: 17,
     homeTeam: 'Jordania',
     homeFlag: 'jo',
