@@ -4,19 +4,18 @@ import {
   collection,
   query,
   orderBy,
-  onSnapshot,
   doc,
   setDoc,
   updateDoc,
-  getDocs,
+  getDocs, // 👈 Importante para la carga única
   where,
   increment,
   writeBatch,
   Timestamp,
   getDoc,
-serverTimestamp // 👈 AQUÍ
+  serverTimestamp
 } from 'firebase/firestore'
-import { db, auth } from '@/services/firebase' // 👈 Importamos auth para verificar la sesión activa
+import { db, auth } from '@/services/firebase' 
 import { MATCHES_DATA } from '@/data/matches'
 import { calculatePoints } from '@/utils/points' 
 
@@ -30,15 +29,17 @@ export function useMatches() {
   const [updatingId, setUpdatingId] = useState(null)
 
   useEffect(() => {
-    const q = query(collection(db, 'matches'), orderBy('date', 'asc'))
+    // Definimos una función asíncrona interna para hacer el fetch único
+    const fetchMatches = async () => {
+      try {
+        const q = query(collection(db, 'matches'), orderBy('date', 'asc'))
+        const snap = await getDocs(q) // 👈 Carga los partidos UNA sola vez al montar el componente
 
-    const unsub = onSnapshot(
-      q,
-      async (snap) => {
         if (snap.empty) {
           await seedMatches()
           return
         }
+        
         const docs = snap.docs.map(d => ({
           id: d.id,
           ...d.data(),
@@ -46,19 +47,19 @@ export function useMatches() {
             ? d.data().date.toDate().toISOString()
             : d.data().date,
         }))
+        
         setMatches(docs)
         setLoading(false)
-      },
-      (err) => {
+      } catch (err) {
         console.error('useMatches error:', err)
         setMatches(MATCHES_DATA)
         setError(err.message)
         setLoading(false)
       }
-    )
+    }
 
-    return unsub
-  }, [])
+    fetchMatches()
+  }, []) // El array vacío asegura que solo se ejecute al cargar la pantalla
 
   /**
    * FUNCIÓN ADMINISTRADORA RECONFIGURADA, BLINDADA Y RESTRINGIDA
@@ -147,20 +148,22 @@ export function useMatches() {
 
             // 🔔 ENCHUFE DE NOTIFICACIÓN ATÓMICA: Creamos la alerta para cada participante
             const newNotifRef = doc(collection(db, 'notifications'))
-batch.set(newNotifRef, {
-  userId: userId,
-  title: "🏆 Resultado del partido",
-  body: `+${pointsEarned} pts | +${coinsReward} monedas en ${matchData.homeTeam || 'Partido'} vs ${matchData.awayTeam || ''}`,
-  type: pointsEarned > 0 ? "points" : "match",
-  read: false,
-  createdAt: serverTimestamp() // 👈 CORRECTO
-})
+            batch.set(newNotifRef, {
+              userId: userId,
+              title: "🏆 Resultado del partido",
+              body: `+${pointsEarned} pts | +${coinsReward} monedas en ${matchData.homeTeam || 'Partido'} vs ${matchData.awayTeam || ''}`,
+              type: pointsEarned > 0 ? "points" : "match",
+              read: false,
+              createdAt: serverTimestamp()
+            })
           }
         }
 
         await batch.commit()
       }
 
+      // Optimización local extra: Actualizamos el estado del partido localmente para que se refleje de inmediato
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, homeScore: hScore, awayScore: aScore, status: 'finished' } : m))
       setUpdatingId(null)
       return true
     } catch (err) {
